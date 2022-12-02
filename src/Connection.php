@@ -64,6 +64,11 @@ final class Connection
         $this->parser = new Parser;
     }
 
+    public function connected(): bool
+    {
+        return $this->socket !== null && $this->socket->isClosed() === false;
+    }
+
     /**
      * @throws \PHPinnacle\Ridge\Exception\ConnectionException
      */
@@ -164,11 +169,11 @@ final class Connection
         );
     }
 
-    public function heartbeat(int $interval, ?callable $connectionLost = null): void
+    public function heartbeat(int $interval): void
     {
         $this->heartbeatWatcherId = Loop::repeat(
             $interval,
-            function (string $watcherId) use ($interval, $connectionLost){
+            function (string $watcherId) use ($interval){
                 $currentTime = Loop::now();
 
                 if (null !== $this->socket) {
@@ -189,12 +194,10 @@ final class Connection
                 }
 
                 if (
-                    null !== $connectionLost &&
                     0 !== $this->lastRead &&
                     $currentTime > ($this->lastRead + $interval + 1000)
                 )
                 {
-                    $connectionLost();
                     Loop::cancel($watcherId);
                 }
 
